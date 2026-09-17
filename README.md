@@ -4,7 +4,7 @@ Enterprise-style auth and API gateway service built with NestJS — JWT access/r
 
 ## Why this exists
 
-Most side-project auth demos stop at "login returns a JWT." This one covers the parts that actually show up in production: refresh tokens with separate TTLs, RBAC enforced through a reusable guard/decorator pair, and TOTP 2FA enrollment (so a user can turn it on themselves via an authenticator app, not just have it toggled by an admin).
+Most side-project auth demos stop at "login returns a JWT." This one covers the parts that actually show up in production: refresh tokens with separate TTLs that rotate and get revoked on use (stored hashed, never in plaintext), RBAC enforced through a reusable guard/decorator pair, and TOTP 2FA enrollment (so a user can turn it on themselves via an authenticator app, not just have it toggled by an admin).
 
 ## Architecture
 
@@ -15,6 +15,7 @@ Client
 AuthController --- AuthService --- UserService --- UserRepository --- Postgres
   |                    |
   |                    +-- JwtService (access + refresh tokens)
+  |                    +-- RefreshTokenRepository (hashed tokens, rotation/revocation) --- Postgres
   |                    +-- otplib (TOTP secret generation / verification)
   |
   v
@@ -33,6 +34,8 @@ NestJS, TypeScript, PostgreSQL (TypeORM), Passport-JWT, bcrypt, otplib (TOTP), D
 |---|---|---|---|
 | POST | `/auth/register` | none | create an account |
 | POST | `/auth/login` | none | returns access + refresh tokens; requires `totpToken` if 2FA is enabled |
+| POST | `/auth/refresh` | refresh token | rotates the refresh token, returns a new access + refresh pair |
+| POST | `/auth/logout` | refresh token | revokes the refresh token |
 | POST | `/auth/2fa/enroll` | JWT | returns an otpauth:// URL to scan in an authenticator app |
 | POST | `/auth/2fa/confirm` | JWT | confirms the first TOTP code and turns 2FA on |
 
