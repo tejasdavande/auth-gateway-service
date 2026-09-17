@@ -2,6 +2,7 @@ import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { CurrentUser, AuthenticatedUser } from '../common/current-user.decorator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
+import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
 import { VerifyTotpDto } from './dto/verify-totp.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
@@ -18,6 +19,17 @@ export class AuthController {
   @Post('login')
   async login(@Body() payload: LoginDto) {
     return await this.authService.login(payload.email, payload.password, payload.totpToken);
+  }
+
+  @Post('refresh')
+  async refresh(@Body() payload: RefreshTokenDto) {
+    return await this.authService.refresh(payload.refreshToken);
+  }
+
+  @Post('logout')
+  async logout(@Body() payload: RefreshTokenDto) {
+    await this.authService.logout(payload.refreshToken);
+    return { loggedOut: true };
   }
 
   @Post('2fa/enroll')
