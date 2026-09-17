@@ -5,7 +5,7 @@ import { authenticator } from 'otplib';
 import { User } from '../users/entities/user.entity';
 import { UserService } from '../users/user.service';
 
-interface TokenPair {
+export interface TokenPair {
   accessToken: string;
   refreshToken: string;
 }
