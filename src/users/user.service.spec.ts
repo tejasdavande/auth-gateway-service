@@ -55,4 +55,34 @@ describe('UserService', () => {
       expect(savedUser.passwordHash).not.toBe('password123');
     });
   });
+
+  describe('ensureAdmin', () => {
+    it('creates an admin when the email is unknown', async () => {
+      userRepository.findByEmail.mockResolvedValue(null);
+      userRepository.save.mockImplementation(async (user) => user as never);
+
+      await userService.ensureAdmin('admin@example.com', 'password123');
+
+      const saved = userRepository.save.mock.calls[0][0];
+      expect(saved.role).toBe(Role.ADMIN);
+      expect(saved.passwordHash).not.toBe('password123');
+    });
+
+    it('promotes an existing user without touching the password', async () => {
+      userRepository.findByEmail.mockResolvedValue({
+        id: '1',
+        email: 'admin@example.com',
+        passwordHash: 'hash',
+        role: Role.MEMBER,
+        totpSecret: null,
+        totpEnabled: false,
+        createdAt: new Date(),
+      });
+      userRepository.save.mockImplementation(async (user) => user as never);
+
+      await userService.ensureAdmin('admin@example.com', 'password123');
+
+      expect(userRepository.save).toHaveBeenCalledWith({ id: '1', role: Role.ADMIN });
+    });
+  });
 });

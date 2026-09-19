@@ -30,6 +30,19 @@ export class UserService {
     return await this.users.save({ email, passwordHash, role: Role.MEMBER });
   }
 
+  async ensureAdmin(email: string, password: string): Promise<User> {
+    const existing = await this.users.findByEmail(email);
+    if (existing) {
+      return existing.role === Role.ADMIN
+        ? existing
+        : await this.users.save({ id: existing.id, role: Role.ADMIN });
+    }
+
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+
+    return await this.users.save({ email, passwordHash, role: Role.ADMIN });
+  }
+
   async validateCredentials(email: string, password: string): Promise<User | null> {
     const user = await this.users.findByEmail(email);
     if (!user) {

@@ -1,5 +1,5 @@
 import { plainToInstance } from 'class-transformer';
-import { IsNumber, IsString, validateSync } from 'class-validator';
+import { IsOptional, IsString, IsNumber, validateSync } from 'class-validator';
 
 class EnvironmentVariables {
   @IsNumber()
@@ -31,6 +31,14 @@ class EnvironmentVariables {
 
   @IsString()
   TOTP_ISSUER: string;
+
+  @IsOptional()
+  @IsString()
+  SEED_ADMIN_EMAIL?: string;
+
+  @IsOptional()
+  @IsString()
+  SEED_ADMIN_PASSWORD?: string;
 }
 
 export function validate(config: Record<string, unknown>) {

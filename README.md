@@ -26,7 +26,7 @@ Controller -> Service -> Repository -> Entity throughout, one repository per ent
 
 ## Tech stack
 
-NestJS, TypeScript, PostgreSQL (TypeORM), Passport-JWT, bcrypt, otplib (TOTP), Docker.
+NestJS, TypeScript, PostgreSQL (TypeORM), Passport-JWT, bcrypt, otplib (TOTP), @nestjs/throttler, Docker.
 
 ## Endpoints
 
@@ -41,6 +41,8 @@ NestJS, TypeScript, PostgreSQL (TypeORM), Passport-JWT, bcrypt, otplib (TOTP), D
 
 `RolesGuard` + `@Roles(Role.ADMIN)` gate any route that needs role checks beyond plain authentication.
 
+Every route is rate limited per IP (60 req/min by default). `/auth/login` and `/auth/2fa/confirm` allow 5 per minute, `/auth/refresh` allows 10; past that you get a `429`.
+
 ## Running locally
 
 ```bash
@@ -49,6 +51,8 @@ docker compose up
 ```
 
 The API comes up on `:3000` against a local Postgres container. Without Docker: run Postgres yourself, point `.env` at it, then `npm install && npm run start:dev`.
+
+To create the first admin, set `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `.env` and run `npm run seed`. It's safe to re-run: an existing user with that email is promoted to admin and keeps their password.
 
 ## Tests
 
