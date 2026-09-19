@@ -1,5 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { validate } from './config/env.validator';
@@ -22,8 +24,10 @@ import { UserModule } from './users/user.module';
         synchronize: false,
       }),
     }),
+    ThrottlerModule.forRoot([{ ttl: 60_000, limit: 60 }]),
     UserModule,
     AuthModule,
   ],
+  providers: [{ provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

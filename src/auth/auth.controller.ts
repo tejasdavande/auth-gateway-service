@@ -1,4 +1,5 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { CurrentUser, AuthenticatedUser } from '../common/current-user.decorator';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
@@ -17,11 +18,13 @@ export class AuthController {
   }
 
   @Post('login')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   async login(@Body() payload: LoginDto) {
     return await this.authService.login(payload.email, payload.password, payload.totpToken);
   }
 
   @Post('refresh')
+  @Throttle({ default: { limit: 10, ttl: 60_000 } })
   async refresh(@Body() payload: RefreshTokenDto) {
     return await this.authService.refresh(payload.refreshToken);
   }
@@ -40,6 +43,7 @@ export class AuthController {
   }
 
   @Post('2fa/confirm')
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @UseGuards(JwtAuthGuard)
   async confirmTotp(@CurrentUser() user: AuthenticatedUser, @Body() payload: VerifyTotpDto) {
     await this.authService.confirmTotpEnrollment(user.userId, payload.token);
