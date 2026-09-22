@@ -15,7 +15,7 @@ export class User {
   @Column({ type: 'enum', enum: Role, default: Role.MEMBER })
   role: Role;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   totpSecret: string | null;
 
   @Column({ default: false })
