@@ -1,6 +1,7 @@
 import { Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser, AuthenticatedUser } from '../common/current-user.decorator';
+import { UserResponseDto } from '../users/dto/user-response.dto';
 import { AuthService } from './auth.service';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
@@ -13,8 +14,9 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  async register(@Body() payload: RegisterDto) {
-    return await this.authService.register(payload.email, payload.password);
+  async register(@Body() payload: RegisterDto): Promise<UserResponseDto> {
+    const user = await this.authService.register(payload.email, payload.password);
+    return UserResponseDto.fromEntity(user);
   }
 
   @Post('login')
