@@ -67,7 +67,8 @@ New migrations are hand-authored or generated against the entities with `npm run
 ## Tests
 
 ```bash
-npm test
+npm test          # unit tests
+npm run migration:run && npm run test:e2e   # e2e, needs a running Postgres
 ```
 
 ## License
