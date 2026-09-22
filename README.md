@@ -54,6 +54,16 @@ The API comes up on `:3000` against a local Postgres container. Without Docker: 
 
 To create the first admin, set `SEED_ADMIN_EMAIL` and `SEED_ADMIN_PASSWORD` in `.env` and run `npm run seed`. It's safe to re-run: an existing user with that email is promoted to admin and keeps their password.
 
+## Migrations
+
+`synchronize` is off, so a fresh database has no tables until migrations run:
+
+```bash
+npm run migration:run
+```
+
+New migrations are hand-authored or generated against the entities with `npm run migration:generate -- src/database/migrations/<name>`. `npm run migration:revert` rolls back the last one.
+
 ## Tests
 
 ```bash
