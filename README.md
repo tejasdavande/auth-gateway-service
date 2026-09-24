@@ -38,6 +38,7 @@ NestJS, TypeScript, PostgreSQL (TypeORM), Passport-JWT, bcrypt, otplib (TOTP), @
 | POST | `/auth/logout` | refresh token | revokes the refresh token |
 | POST | `/auth/2fa/enroll` | JWT | returns an otpauth:// URL to scan in an authenticator app |
 | POST | `/auth/2fa/confirm` | JWT | confirms the first TOTP code and turns 2FA on |
+| GET | `/users?page=&limit=` | JWT, admin | paginated user list (`limit` max 100) |
 
 `RolesGuard` + `@Roles(Role.ADMIN)` gate any route that needs role checks beyond plain authentication.
 

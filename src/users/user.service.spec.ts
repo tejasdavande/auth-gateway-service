@@ -17,6 +17,7 @@ describe('UserService', () => {
           useValue: {
             findById: jest.fn(),
             findByEmail: jest.fn(),
+            findPage: jest.fn(),
             save: jest.fn(),
           },
         },
@@ -83,6 +84,16 @@ describe('UserService', () => {
       await userService.ensureAdmin('admin@example.com', 'password123');
 
       expect(userRepository.save).toHaveBeenCalledWith({ id: '1', role: Role.ADMIN });
+    });
+  });
+
+  describe('list', () => {
+    it('translates page/limit into skip/take', async () => {
+      userRepository.findPage.mockResolvedValue([[], 0]);
+
+      await userService.list(3, 20);
+
+      expect(userRepository.findPage).toHaveBeenCalledWith(40, 20);
     });
   });
 });

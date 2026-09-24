@@ -19,6 +19,10 @@ export class UserService {
     return user;
   }
 
+  async list(page: number, limit: number): Promise<[User[], number]> {
+    return await this.users.findPage((page - 1) * limit, limit);
+  }
+
   async register(email: string, password: string): Promise<User> {
     const existing = await this.users.findByEmail(email);
     if (existing) {

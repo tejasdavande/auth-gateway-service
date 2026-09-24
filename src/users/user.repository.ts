@@ -15,6 +15,10 @@ export class UserRepository {
     return await this.repo.findOne({ where: { email } });
   }
 
+  async findPage(skip: number, take: number): Promise<[User[], number]> {
+    return await this.repo.findAndCount({ order: { createdAt: 'ASC' }, skip, take });
+  }
+
   async save(user: Partial<User>): Promise<User> {
     return await this.repo.save(user);
   }
