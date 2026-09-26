@@ -92,6 +92,7 @@ export class AuthService {
     });
     const refreshToken = this.jwtService.sign(payload, {
       expiresIn: this.configService.get<string>('JWT_REFRESH_TTL'),
+      jwtid: crypto.randomUUID(),
     });
 
     const { exp } = this.jwtService.decode(refreshToken) as { exp: number };

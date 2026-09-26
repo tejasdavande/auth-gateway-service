@@ -111,7 +111,20 @@ describe('AuthService', () => {
     });
   });
 
-  describe('logout', () => {
+  describe('login', () => {
+    it('gives every refresh token a unique jti so same-second logins do not collide', async () => {
+      userService.validateCredentials.mockResolvedValue(user);
+
+      await authService.login(user.email, 'password');
+      await authService.login(user.email, 'password');
+
+      const jtis = jwtService.sign.mock.calls.map(([, options]) => options?.jwtid).filter(Boolean);
+      expect(jtis).toHaveLength(2);
+      expect(new Set(jtis).size).toBe(2);
+    });
+  });
+
+    describe('logout', () => {
     it('revokes the matching stored token', async () => {
       refreshTokenRepository.findByHash.mockResolvedValue({
         id: 'rt-1',
