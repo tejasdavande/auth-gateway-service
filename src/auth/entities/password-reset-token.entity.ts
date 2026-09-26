@@ -1,11 +1,11 @@
 import { Column, CreateDateColumn, Entity, Index, PrimaryGeneratedColumn } from 'typeorm';
 
-@Entity('refresh_tokens')
-export class RefreshToken {
+@Entity('password_reset_tokens')
+export class PasswordResetToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @Index('IDX_refresh_tokens_userId')
+  @Index('IDX_password_reset_tokens_userId')
   @Column()
   userId: string;
 
@@ -16,7 +16,7 @@ export class RefreshToken {
   expiresAt: Date;
 
   @Column({ type: 'timestamp', nullable: true })
-  revokedAt: Date | null;
+  usedAt: Date | null;
 
   @CreateDateColumn()
   createdAt: Date;
