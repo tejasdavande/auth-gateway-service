@@ -18,6 +18,9 @@ AuthController --- AuthService --- UserService --- UserRepository --- Postgres
   |                    +-- RefreshTokenRepository (hashed tokens, rotation/revocation) --- Postgres
   |                    +-- otplib (TOTP secret generation / verification)
   |
+  +-- PasswordResetService --- PasswordResetTokenRepository (hashed, single-use) --- Postgres
+  |                    +-- PasswordResetMailer (logs the token for now; real mail transport is a TODO)
+  |
   v
 JwtAuthGuard -> RolesGuard  (applied to protected routes across the app)
 ```
@@ -36,13 +39,15 @@ NestJS, TypeScript, PostgreSQL (TypeORM), Passport-JWT, bcrypt, otplib (TOTP), @
 | POST | `/auth/login` | none | returns access + refresh tokens; requires `totpToken` if 2FA is enabled |
 | POST | `/auth/refresh` | refresh token | rotates the refresh token, returns a new access + refresh pair |
 | POST | `/auth/logout` | refresh token | revokes the refresh token |
+| POST | `/auth/password-reset/request` | none | emails a single-use reset token (30 min TTL); always `202`, so it can't be used to probe which emails exist |
+| POST | `/auth/password-reset/confirm` | reset token | sets a new password and revokes every refresh token the user holds |
 | POST | `/auth/2fa/enroll` | JWT | returns an otpauth:// URL to scan in an authenticator app |
 | POST | `/auth/2fa/confirm` | JWT | confirms the first TOTP code and turns 2FA on |
 | GET | `/users?page=&limit=` | JWT, admin | paginated user list (`limit` max 100) |
 
 `RolesGuard` + `@Roles(Role.ADMIN)` gate any route that needs role checks beyond plain authentication.
 
-Every route is rate limited per IP (60 req/min by default). `/auth/login` and `/auth/2fa/confirm` allow 5 per minute, `/auth/refresh` allows 10; past that you get a `429`.
+Every route is rate limited per IP (60 req/min by default). `/auth/login` and `/auth/2fa/confirm` allow 5 per minute, `/auth/refresh` allows 10, `/auth/password-reset/request` allows 3; past that you get a `429`.
 
 ## Running locally
 

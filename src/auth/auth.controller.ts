@@ -1,17 +1,23 @@
-import { Body, Controller, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser, AuthenticatedUser } from '../common/current-user.decorator';
 import { UserResponseDto } from '../users/dto/user-response.dto';
 import { AuthService } from './auth.service';
+import { ConfirmPasswordResetDto } from './dto/confirm-password-reset.dto';
 import { LoginDto } from './dto/login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { RegisterDto } from './dto/register.dto';
+import { RequestPasswordResetDto } from './dto/request-password-reset.dto';
 import { VerifyTotpDto } from './dto/verify-totp.dto';
 import { JwtAuthGuard } from './jwt-auth.guard';
+import { PasswordResetService } from './password-reset.service';
 
 @Controller('auth')
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(
+    private readonly authService: AuthService,
+    private readonly passwordResetService: PasswordResetService
+  ) {}
 
   @Post('register')
   async register(@Body() payload: RegisterDto): Promise<UserResponseDto> {
@@ -35,6 +41,22 @@ export class AuthController {
   async logout(@Body() payload: RefreshTokenDto) {
     await this.authService.logout(payload.refreshToken);
     return { loggedOut: true };
+  }
+
+  @Post('password-reset/request')
+  @HttpCode(HttpStatus.ACCEPTED)
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  async requestPasswordReset(@Body() payload: RequestPasswordResetDto) {
+    await this.passwordResetService.request(payload.email);
+    return { requested: true };
+  }
+
+  @Post('password-reset/confirm')
+  @HttpCode(HttpStatus.OK)
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  async confirmPasswordReset(@Body() payload: ConfirmPasswordResetDto) {
+    await this.passwordResetService.confirm(payload.token, payload.newPassword);
+    return { passwordReset: true };
   }
 
   @Post('2fa/enroll')

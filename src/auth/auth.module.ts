@@ -9,6 +9,8 @@ import { AuthService } from './auth.service';
 import { RefreshToken } from './entities/refresh-token.entity';
 import { PasswordResetToken } from './entities/password-reset-token.entity';
 import { JwtStrategy } from './jwt.strategy';
+import { PasswordResetMailer } from './password-reset.mailer';
+import { PasswordResetService } from './password-reset.service';
 import { PasswordResetTokenRepository } from './password-reset-token.repository';
 import { RefreshTokenRepository } from './refresh-token.repository';
 
@@ -26,7 +28,14 @@ import { RefreshTokenRepository } from './refresh-token.repository';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, JwtStrategy, RefreshTokenRepository, PasswordResetTokenRepository],
+  providers: [
+    AuthService,
+    JwtStrategy,
+    RefreshTokenRepository,
+    PasswordResetTokenRepository,
+    PasswordResetService,
+    PasswordResetMailer,
+  ],
   exports: [AuthService],
 })
 export class AuthModule {}

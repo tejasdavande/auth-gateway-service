@@ -19,6 +19,10 @@ export class UserService {
     return user;
   }
 
+  async findByEmail(email: string): Promise<User | null> {
+    return await this.users.findByEmail(email);
+  }
+
   async list(page: number, limit: number): Promise<[User[], number]> {
     return await this.users.findPage((page - 1) * limit, limit);
   }
@@ -55,6 +59,11 @@ export class UserService {
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
     return passwordMatches ? user : null;
+  }
+
+  async updatePassword(userId: string, password: string): Promise<void> {
+    const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
+    await this.users.save({ id: userId, passwordHash });
   }
 
   async setTotpSecret(userId: string, secret: string): Promise<void> {

@@ -5,6 +5,7 @@ import { Test } from '@nestjs/testing';
 import * as request from 'supertest';
 import { AuthController } from './auth.controller';
 import { AuthService } from './auth.service';
+import { PasswordResetService } from './password-reset.service';
 
 describe('AuthController rate limiting', () => {
   let app: INestApplication;
@@ -16,6 +17,7 @@ describe('AuthController rate limiting', () => {
       controllers: [AuthController],
       providers: [
         { provide: AuthService, useValue: authService },
+        { provide: PasswordResetService, useValue: {} },
         { provide: APP_GUARD, useClass: ThrottlerGuard },
       ],
     }).compile();
