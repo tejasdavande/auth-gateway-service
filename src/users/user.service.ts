@@ -23,6 +23,10 @@ export class UserService {
     return await this.users.findByEmail(email);
   }
 
+  async findById(id: string): Promise<User | null> {
+    return await this.users.findById(id);
+  }
+
   async list(page: number, limit: number): Promise<[User[], number]> {
     return await this.users.findPage((page - 1) * limit, limit);
   }

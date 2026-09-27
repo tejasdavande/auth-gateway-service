@@ -77,4 +77,18 @@ describe('Users (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(400);
   });
+
+  it('picks up a role change without waiting for the old token to expire', async () => {
+    await request(app.getHttpServer())
+      .get('/users')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .expect(403);
+
+    await app.get(UserService).ensureAdmin(memberEmail, password);
+
+    await request(app.getHttpServer())
+      .get('/users')
+      .set('Authorization', `Bearer ${memberToken}`)
+      .expect(200);
+  });
 });
