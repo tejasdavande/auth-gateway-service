@@ -19,7 +19,7 @@ AuthController --- AuthService --- UserService --- UserRepository --- Postgres
   |                    +-- otplib (TOTP secret generation / verification)
   |
   +-- PasswordResetService --- PasswordResetTokenRepository (hashed, single-use) --- Postgres
-  |                    +-- PasswordResetMailer (logs the token for now; real mail transport is a TODO)
+  |                    +-- PasswordResetMailer (SMTP via nodemailer; logs the token instead when SMTP_HOST is unset)
   |
   v
 JwtAuthGuard -> RolesGuard  (applied to protected routes across the app)
