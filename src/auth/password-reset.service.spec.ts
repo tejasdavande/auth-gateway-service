@@ -22,6 +22,8 @@ describe('PasswordResetService', () => {
     role: Role.MEMBER,
     totpSecret: null,
     totpEnabled: false,
+    failedLoginAttempts: 0,
+    lockedUntil: null,
     createdAt: new Date(),
   };
 

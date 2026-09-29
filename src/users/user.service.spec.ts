@@ -37,6 +37,8 @@ describe('UserService', () => {
         role: Role.MEMBER,
         totpSecret: null,
         totpEnabled: false,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
         createdAt: new Date(),
       });
 
@@ -77,6 +79,8 @@ describe('UserService', () => {
         role: Role.MEMBER,
         totpSecret: null,
         totpEnabled: false,
+        failedLoginAttempts: 0,
+        lockedUntil: null,
         createdAt: new Date(),
       });
       userRepository.save.mockImplementation(async (user) => user as never);

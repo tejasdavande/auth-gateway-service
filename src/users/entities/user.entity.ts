@@ -21,6 +21,12 @@ export class User {
   @Column({ default: false })
   totpEnabled: boolean;
 
+  @Column({ default: 0 })
+  failedLoginAttempts: number;
+
+  @Column({ type: 'timestamp', nullable: true })
+  lockedUntil: Date | null;
+
   @CreateDateColumn()
   createdAt: Date;
 }

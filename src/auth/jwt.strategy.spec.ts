@@ -36,6 +36,8 @@ describe('JwtStrategy', () => {
       role: Role.ADMIN,
       totpSecret: null,
       totpEnabled: false,
+      failedLoginAttempts: 0,
+      lockedUntil: null,
       createdAt: new Date(),
     });
 
