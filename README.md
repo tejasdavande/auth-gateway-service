@@ -49,6 +49,8 @@ NestJS, TypeScript, PostgreSQL (TypeORM), Passport-JWT, bcrypt, otplib (TOTP), @
 
 Every route is rate limited per IP (60 req/min by default). `/auth/login` and `/auth/2fa/confirm` allow 5 per minute, `/auth/refresh` allows 10, `/auth/password-reset/request` allows 3; past that you get a `429`.
 
+On top of the per-IP limit, each account locks for 15 minutes after 5 consecutive failed logins (a wrong password or a wrong TOTP code; a missing TOTP code doesn't count). While locked, even the correct password gets the same `401` as a wrong one, so the response doesn't reveal which accounts exist or are locked. A successful login resets the counter, and a password reset clears the lock.
+
 ## Running locally
 
 ```bash

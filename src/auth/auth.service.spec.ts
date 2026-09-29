@@ -1,6 +1,7 @@
 import { UnauthorizedException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
+import { authenticator } from 'otplib';
 import { Test } from '@nestjs/testing';
 import { Role } from '../common/role.enum';
 import { UserService } from '../users/user.service';
@@ -33,6 +34,8 @@ describe('AuthService', () => {
           provide: UserService,
           useValue: {
             validateCredentials: jest.fn(),
+            recordFailedLogin: jest.fn(),
+            clearFailedLogins: jest.fn(),
             getById: jest.fn(),
             setTotpSecret: jest.fn(),
             enableTotp: jest.fn(),
@@ -124,9 +127,35 @@ describe('AuthService', () => {
       expect(jtis).toHaveLength(2);
       expect(new Set(jtis).size).toBe(2);
     });
+
+    it('counts a wrong totp code as a failed login', async () => {
+      const totpSecret = authenticator.generateSecret();
+      userService.validateCredentials.mockResolvedValue({ ...user, totpEnabled: true, totpSecret });
+
+      await expect(authService.login(user.email, 'password', '000000')).rejects.toThrow(UnauthorizedException);
+
+      expect(userService.recordFailedLogin).toHaveBeenCalledWith(user.id);
+      expect(userService.clearFailedLogins).not.toHaveBeenCalled();
+    });
+
+    it('does not count a missing totp code, the client just has not prompted for it yet', async () => {
+      userService.validateCredentials.mockResolvedValue({ ...user, totpEnabled: true, totpSecret: 'secret' });
+
+      await expect(authService.login(user.email, 'password')).rejects.toThrow(UnauthorizedException);
+
+      expect(userService.recordFailedLogin).not.toHaveBeenCalled();
+    });
+
+    it('clears the failed login counter on success', async () => {
+      userService.validateCredentials.mockResolvedValue(user);
+
+      await authService.login(user.email, 'password');
+
+      expect(userService.clearFailedLogins).toHaveBeenCalledWith(user);
+    });
   });
 
-    describe('logout', () => {
+  describe('logout', () => {
     it('revokes the matching stored token', async () => {
       refreshTokenRepository.findByHash.mockResolvedValue({
         id: 'rt-1',

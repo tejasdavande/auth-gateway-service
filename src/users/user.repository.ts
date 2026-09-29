@@ -19,6 +19,18 @@ export class UserRepository {
     return await this.repo.findAndCount({ order: { createdAt: 'ASC' }, skip, take });
   }
 
+  async incrementFailedLogins(id: string): Promise<number> {
+    const result = await this.repo
+      .createQueryBuilder()
+      .update(User)
+      .set({ failedLoginAttempts: () => '"failedLoginAttempts" + 1' })
+      .where('id = :id', { id })
+      .returning('"failedLoginAttempts"')
+      .execute();
+
+    return result.raw[0].failedLoginAttempts;
+  }
+
   async save(user: Partial<User>): Promise<User> {
     return await this.repo.save(user);
   }

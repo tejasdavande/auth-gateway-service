@@ -38,10 +38,16 @@ export class AuthService {
     }
 
     if (user.totpEnabled) {
-      if (!totpToken || !authenticator.check(totpToken, user.totpSecret!)) {
+      if (!totpToken) {
+        throw new UnauthorizedException('invalid or missing totp token');
+      }
+      if (!authenticator.check(totpToken, user.totpSecret!)) {
+        await this.userService.recordFailedLogin(user.id);
         throw new UnauthorizedException('invalid or missing totp token');
       }
     }
+
+    await this.userService.clearFailedLogins(user);
 
     return this.issueTokens(user);
   }

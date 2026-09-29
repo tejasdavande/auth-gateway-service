@@ -5,6 +5,8 @@ import { User } from './entities/user.entity';
 import { UserRepository } from './user.repository';
 
 const SALT_ROUNDS = 12;
+const MAX_FAILED_LOGINS = 5;
+const LOCKOUT_MS = 15 * 60 * 1000;
 
 @Injectable()
 export class UserService {
@@ -57,17 +59,39 @@ export class UserService {
 
   async validateCredentials(email: string, password: string): Promise<User | null> {
     const user = await this.users.findByEmail(email);
-    if (!user) {
+    if (!user || this.isLocked(user)) {
       return null;
     }
 
     const passwordMatches = await bcrypt.compare(password, user.passwordHash);
-    return passwordMatches ? user : null;
+    if (!passwordMatches) {
+      await this.recordFailedLogin(user.id);
+      return null;
+    }
+
+    return user;
+  }
+
+  async recordFailedLogin(userId: string): Promise<void> {
+    const attempts = await this.users.incrementFailedLogins(userId);
+    if (attempts >= MAX_FAILED_LOGINS) {
+      await this.users.save({
+        id: userId,
+        failedLoginAttempts: 0,
+        lockedUntil: new Date(Date.now() + LOCKOUT_MS),
+      });
+    }
+  }
+
+  async clearFailedLogins(user: User): Promise<void> {
+    if (user.failedLoginAttempts > 0 || user.lockedUntil) {
+      await this.users.save({ id: user.id, failedLoginAttempts: 0, lockedUntil: null });
+    }
   }
 
   async updatePassword(userId: string, password: string): Promise<void> {
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
-    await this.users.save({ id: userId, passwordHash });
+    await this.users.save({ id: userId, passwordHash, failedLoginAttempts: 0, lockedUntil: null });
   }
 
   async setTotpSecret(userId: string, secret: string): Promise<void> {
@@ -76,5 +100,9 @@ export class UserService {
 
   async enableTotp(userId: string): Promise<void> {
     await this.users.save({ id: userId, totpEnabled: true });
+  }
+
+  private isLocked(user: User): boolean {
+    return !!user.lockedUntil && user.lockedUntil.getTime() > Date.now();
   }
 }
