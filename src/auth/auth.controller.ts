@@ -1,4 +1,4 @@
-import { Body, Controller, HttpCode, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpCode, HttpStatus, Ip, Post, UseGuards } from '@nestjs/common';
 import { Throttle } from '@nestjs/throttler';
 import { CurrentUser, AuthenticatedUser } from '../common/current-user.decorator';
 import { UserResponseDto } from '../users/dto/user-response.dto';
@@ -27,8 +27,8 @@ export class AuthController {
 
   @Post('login')
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  async login(@Body() payload: LoginDto) {
-    return await this.authService.login(payload.email, payload.password, payload.totpToken);
+  async login(@Body() payload: LoginDto, @Ip() ip: string) {
+    return await this.authService.login(payload.email, payload.password, payload.totpToken, ip);
   }
 
   @Post('refresh')
@@ -46,16 +46,16 @@ export class AuthController {
   @Post('password-reset/request')
   @HttpCode(HttpStatus.ACCEPTED)
   @Throttle({ default: { limit: 3, ttl: 60_000 } })
-  async requestPasswordReset(@Body() payload: RequestPasswordResetDto) {
-    await this.passwordResetService.request(payload.email);
+  async requestPasswordReset(@Body() payload: RequestPasswordResetDto, @Ip() ip: string) {
+    await this.passwordResetService.request(payload.email, ip);
     return { requested: true };
   }
 
   @Post('password-reset/confirm')
   @HttpCode(HttpStatus.OK)
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  async confirmPasswordReset(@Body() payload: ConfirmPasswordResetDto) {
-    await this.passwordResetService.confirm(payload.token, payload.newPassword);
+  async confirmPasswordReset(@Body() payload: ConfirmPasswordResetDto, @Ip() ip: string) {
+    await this.passwordResetService.confirm(payload.token, payload.newPassword, ip);
     return { passwordReset: true };
   }
 

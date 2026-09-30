@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import { authenticator } from 'otplib';
 import { Test } from '@nestjs/testing';
+import { AuditEvent } from '../audit/audit-event.enum';
+import { AuditService } from '../audit/audit.service';
 import { Role } from '../common/role.enum';
 import { UserService } from '../users/user.service';
 import { AuthService } from './auth.service';
@@ -13,6 +15,7 @@ describe('AuthService', () => {
   let jwtService: jest.Mocked<JwtService>;
   let refreshTokenRepository: jest.Mocked<RefreshTokenRepository>;
   let userService: jest.Mocked<UserService>;
+  let audit: jest.Mocked<AuditService>;
 
   const user = {
     id: 'user-1',
@@ -61,6 +64,7 @@ describe('AuthService', () => {
             revoke: jest.fn(),
           },
         },
+        { provide: AuditService, useValue: { record: jest.fn() } },
       ],
     }).compile();
 
@@ -68,6 +72,7 @@ describe('AuthService', () => {
     jwtService = moduleRef.get(JwtService);
     refreshTokenRepository = moduleRef.get(RefreshTokenRepository);
     userService = moduleRef.get(UserService);
+    audit = moduleRef.get(AuditService);
 
     jwtService.sign.mockReturnValue('signed-token');
     jwtService.decode.mockReturnValue({ exp: Math.floor(Date.now() / 1000) + 3600 });
@@ -136,6 +141,11 @@ describe('AuthService', () => {
 
       expect(userService.recordFailedLogin).toHaveBeenCalledWith(user.id);
       expect(userService.clearFailedLogins).not.toHaveBeenCalled();
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.LOGIN_FAILED, {
+        userId: user.id,
+        ip: undefined,
+        metadata: { email: user.email, reason: 'totp' },
+      });
     });
 
     it('does not count a missing totp code, the client just has not prompted for it yet', async () => {
@@ -144,14 +154,41 @@ describe('AuthService', () => {
       await expect(authService.login(user.email, 'password')).rejects.toThrow(UnauthorizedException);
 
       expect(userService.recordFailedLogin).not.toHaveBeenCalled();
+      expect(audit.record).not.toHaveBeenCalled();
+    });
+
+    it('audits a bad password with the attempted email, since there may be no user to attach it to', async () => {
+      userService.validateCredentials.mockResolvedValue(null);
+
+      await expect(authService.login('nobody@example.com', 'password', undefined, '10.0.0.1')).rejects.toThrow(
+        UnauthorizedException
+      );
+
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.LOGIN_FAILED, {
+        ip: '10.0.0.1',
+        metadata: { email: 'nobody@example.com' },
+      });
     });
 
     it('clears the failed login counter on success', async () => {
       userService.validateCredentials.mockResolvedValue(user);
 
-      await authService.login(user.email, 'password');
+      await authService.login(user.email, 'password', undefined, '10.0.0.1');
 
       expect(userService.clearFailedLogins).toHaveBeenCalledWith(user);
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.LOGIN_SUCCEEDED, { userId: user.id, ip: '10.0.0.1' });
+    });
+  });
+
+  describe('confirmTotpEnrollment', () => {
+    it('enables totp and audits it when the code checks out', async () => {
+      const totpSecret = authenticator.generateSecret();
+      userService.getById.mockResolvedValue({ ...user, totpSecret });
+
+      await authService.confirmTotpEnrollment(user.id, authenticator.generate(totpSecret));
+
+      expect(userService.enableTotp).toHaveBeenCalledWith(user.id);
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.TOTP_ENABLED, { userId: user.id });
     });
   });
 
@@ -169,6 +206,7 @@ describe('AuthService', () => {
       await authService.logout('some-token');
 
       expect(refreshTokenRepository.revoke).toHaveBeenCalledWith('rt-1');
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.LOGOUT, { userId: user.id });
     });
 
     it('is a no-op when the token is unknown', async () => {

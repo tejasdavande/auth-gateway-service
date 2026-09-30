@@ -1,6 +1,8 @@
 import { BadRequestException } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
 import * as crypto from 'crypto';
+import { AuditEvent } from '../audit/audit-event.enum';
+import { AuditService } from '../audit/audit.service';
 import { Role } from '../common/role.enum';
 import { UserService } from '../users/user.service';
 import { PasswordResetMailer } from './password-reset.mailer';
@@ -14,6 +16,7 @@ describe('PasswordResetService', () => {
   let resetTokens: jest.Mocked<PasswordResetTokenRepository>;
   let refreshTokens: jest.Mocked<RefreshTokenRepository>;
   let mailer: jest.Mocked<PasswordResetMailer>;
+  let audit: jest.Mocked<AuditService>;
 
   const user = {
     id: 'user-1',
@@ -53,6 +56,7 @@ describe('PasswordResetService', () => {
         },
         { provide: RefreshTokenRepository, useValue: { revokeAllForUser: jest.fn() } },
         { provide: PasswordResetMailer, useValue: { send: jest.fn() } },
+        { provide: AuditService, useValue: { record: jest.fn() } },
       ],
     }).compile();
 
@@ -61,6 +65,7 @@ describe('PasswordResetService', () => {
     resetTokens = moduleRef.get(PasswordResetTokenRepository);
     refreshTokens = moduleRef.get(RefreshTokenRepository);
     mailer = moduleRef.get(PasswordResetMailer);
+    audit = moduleRef.get(AuditService);
   });
 
   describe('request', () => {
@@ -71,18 +76,20 @@ describe('PasswordResetService', () => {
 
       expect(resetTokens.save).not.toHaveBeenCalled();
       expect(mailer.send).not.toHaveBeenCalled();
+      expect(audit.record).not.toHaveBeenCalled();
     });
 
     it('stores only the hash of the token it mails out', async () => {
       userService.findByEmail.mockResolvedValue(user);
 
-      await service.request(user.email);
+      await service.request(user.email, '10.0.0.1');
 
       const sentToken = mailer.send.mock.calls[0][1];
       const saved = resetTokens.save.mock.calls[0][0];
       expect(resetTokens.invalidateOpenForUser).toHaveBeenCalledWith(user.id);
       expect(saved.tokenHash).toBe(crypto.createHash('sha256').update(sentToken).digest('hex'));
       expect(saved.tokenHash).not.toBe(sentToken);
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.PASSWORD_RESET_REQUESTED, { userId: user.id, ip: '10.0.0.1' });
     });
   });
 
@@ -91,10 +98,11 @@ describe('PasswordResetService', () => {
       resetTokens.findByHash.mockResolvedValue(storedToken());
       resetTokens.markUsed.mockResolvedValue(true);
 
-      await service.confirm('token', 'NewPassword123!');
+      await service.confirm('token', 'NewPassword123!', '10.0.0.1');
 
       expect(userService.updatePassword).toHaveBeenCalledWith(user.id, 'NewPassword123!');
       expect(refreshTokens.revokeAllForUser).toHaveBeenCalledWith(user.id);
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.PASSWORD_RESET_COMPLETED, { userId: user.id, ip: '10.0.0.1' });
     });
 
     it('rejects an unknown token', async () => {

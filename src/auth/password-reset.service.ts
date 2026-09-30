@@ -1,5 +1,7 @@
 import { BadRequestException, Injectable } from '@nestjs/common';
 import * as crypto from 'crypto';
+import { AuditEvent } from '../audit/audit-event.enum';
+import { AuditService } from '../audit/audit.service';
 import { UserService } from '../users/user.service';
 import { PasswordResetMailer } from './password-reset.mailer';
 import { PasswordResetTokenRepository } from './password-reset-token.repository';
@@ -13,10 +15,11 @@ export class PasswordResetService {
     private readonly userService: UserService,
     private readonly resetTokens: PasswordResetTokenRepository,
     private readonly refreshTokens: RefreshTokenRepository,
-    private readonly mailer: PasswordResetMailer
+    private readonly mailer: PasswordResetMailer,
+    private readonly audit: AuditService
   ) {}
 
-  async request(email: string): Promise<void> {
+  async request(email: string, ip?: string): Promise<void> {
     const user = await this.userService.findByEmail(email);
     if (!user) {
       return;
@@ -32,9 +35,10 @@ export class PasswordResetService {
     });
 
     await this.mailer.send(user.email, token);
+    await this.audit.record(AuditEvent.PASSWORD_RESET_REQUESTED, { userId: user.id, ip });
   }
 
-  async confirm(token: string, newPassword: string): Promise<void> {
+  async confirm(token: string, newPassword: string, ip?: string): Promise<void> {
     const stored = await this.resetTokens.findByHash(this.hashToken(token));
     if (!stored || stored.usedAt || stored.expiresAt.getTime() < Date.now()) {
       throw new BadRequestException('invalid or expired reset token');
@@ -47,6 +51,7 @@ export class PasswordResetService {
 
     await this.userService.updatePassword(stored.userId, newPassword);
     await this.refreshTokens.revokeAllForUser(stored.userId);
+    await this.audit.record(AuditEvent.PASSWORD_RESET_COMPLETED, { userId: stored.userId, ip });
   }
 
   private hashToken(token: string): string {

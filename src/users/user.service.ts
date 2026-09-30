@@ -1,5 +1,7 @@
 import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
+import { AuditEvent } from '../audit/audit-event.enum';
+import { AuditService } from '../audit/audit.service';
 import { Role } from '../common/role.enum';
 import { User } from './entities/user.entity';
 import { UserRepository } from './user.repository';
@@ -10,7 +12,10 @@ const LOCKOUT_MS = 15 * 60 * 1000;
 
 @Injectable()
 export class UserService {
-  constructor(private readonly users: UserRepository) {}
+  constructor(
+    private readonly users: UserRepository,
+    private readonly audit: AuditService
+  ) {}
 
   async getById(id: string): Promise<User> {
     const user = await this.users.findById(id);
@@ -47,9 +52,16 @@ export class UserService {
   async ensureAdmin(email: string, password: string): Promise<User> {
     const existing = await this.users.findByEmail(email);
     if (existing) {
-      return existing.role === Role.ADMIN
-        ? existing
-        : await this.users.save({ id: existing.id, role: Role.ADMIN });
+      if (existing.role === Role.ADMIN) {
+        return existing;
+      }
+
+      const promoted = await this.users.save({ id: existing.id, role: Role.ADMIN });
+      await this.audit.record(AuditEvent.ROLE_CHANGED, {
+        userId: existing.id,
+        metadata: { from: existing.role, to: Role.ADMIN },
+      });
+      return promoted;
     }
 
     const passwordHash = await bcrypt.hash(password, SALT_ROUNDS);
@@ -80,6 +92,7 @@ export class UserService {
         failedLoginAttempts: 0,
         lockedUntil: new Date(Date.now() + LOCKOUT_MS),
       });
+      await this.audit.record(AuditEvent.ACCOUNT_LOCKED, { userId });
     }
   }
 

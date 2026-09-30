@@ -3,6 +3,8 @@ import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
 import * as crypto from 'crypto';
 import { authenticator } from 'otplib';
+import { AuditEvent } from '../audit/audit-event.enum';
+import { AuditService } from '../audit/audit.service';
 import { User } from '../users/entities/user.entity';
 import { UserService } from '../users/user.service';
 import { RefreshTokenRepository } from './refresh-token.repository';
@@ -24,16 +26,18 @@ export class AuthService {
     private readonly userService: UserService,
     private readonly jwtService: JwtService,
     private readonly configService: ConfigService,
-    private readonly refreshTokens: RefreshTokenRepository
+    private readonly refreshTokens: RefreshTokenRepository,
+    private readonly audit: AuditService
   ) {}
 
   async register(email: string, password: string): Promise<User> {
     return await this.userService.register(email, password);
   }
 
-  async login(email: string, password: string, totpToken?: string): Promise<TokenPair> {
+  async login(email: string, password: string, totpToken?: string, ip?: string): Promise<TokenPair> {
     const user = await this.userService.validateCredentials(email, password);
     if (!user) {
+      await this.audit.record(AuditEvent.LOGIN_FAILED, { ip, metadata: { email } });
       throw new UnauthorizedException('invalid credentials');
     }
 
@@ -43,11 +47,13 @@ export class AuthService {
       }
       if (!authenticator.check(totpToken, user.totpSecret!)) {
         await this.userService.recordFailedLogin(user.id);
+        await this.audit.record(AuditEvent.LOGIN_FAILED, { userId: user.id, ip, metadata: { email, reason: 'totp' } });
         throw new UnauthorizedException('invalid or missing totp token');
       }
     }
 
     await this.userService.clearFailedLogins(user);
+    await this.audit.record(AuditEvent.LOGIN_SUCCEEDED, { userId: user.id, ip });
 
     return this.issueTokens(user);
   }
@@ -71,6 +77,7 @@ export class AuthService {
     const stored = await this.refreshTokens.findByHash(this.hashToken(refreshToken));
     if (stored) {
       await this.refreshTokens.revoke(stored.id);
+      await this.audit.record(AuditEvent.LOGOUT, { userId: stored.userId });
     }
   }
 
@@ -88,6 +95,7 @@ export class AuthService {
     }
 
     await this.userService.enableTotp(userId);
+    await this.audit.record(AuditEvent.TOTP_ENABLED, { userId });
   }
 
   private async issueTokens(user: User): Promise<TokenPair> {

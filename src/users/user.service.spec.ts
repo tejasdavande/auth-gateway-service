@@ -1,6 +1,8 @@
 import { ConflictException } from '@nestjs/common';
 import * as bcrypt from 'bcrypt';
 import { Test } from '@nestjs/testing';
+import { AuditEvent } from '../audit/audit-event.enum';
+import { AuditService } from '../audit/audit.service';
 import { Role } from '../common/role.enum';
 import { UserRepository } from './user.repository';
 import { UserService } from './user.service';
@@ -8,6 +10,7 @@ import { UserService } from './user.service';
 describe('UserService', () => {
   let userService: UserService;
   let userRepository: jest.Mocked<UserRepository>;
+  let audit: jest.Mocked<AuditService>;
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
@@ -23,11 +26,13 @@ describe('UserService', () => {
             save: jest.fn(),
           },
         },
+        { provide: AuditService, useValue: { record: jest.fn() } },
       ],
     }).compile();
 
     userService = moduleRef.get(UserService);
     userRepository = moduleRef.get(UserRepository);
+    audit = moduleRef.get(AuditService);
   });
 
   describe('register', () => {
@@ -90,6 +95,10 @@ describe('UserService', () => {
       await userService.ensureAdmin('admin@example.com', 'password123');
 
       expect(userRepository.save).toHaveBeenCalledWith({ id: '1', role: Role.ADMIN });
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.ROLE_CHANGED, {
+        userId: '1',
+        metadata: { from: Role.MEMBER, to: Role.ADMIN },
+      });
     });
   });
 
@@ -124,6 +133,7 @@ describe('UserService', () => {
 
       expect(userRepository.incrementFailedLogins).toHaveBeenCalledWith('1');
       expect(userRepository.save).not.toHaveBeenCalled();
+      expect(audit.record).not.toHaveBeenCalled();
     });
 
     it('locks the account on the fifth consecutive failure', async () => {
@@ -135,6 +145,7 @@ describe('UserService', () => {
       const saved = userRepository.save.mock.calls[0][0];
       expect(saved.failedLoginAttempts).toBe(0);
       expect(saved.lockedUntil!.getTime()).toBeGreaterThan(Date.now());
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.ACCOUNT_LOCKED, { userId: '1' });
     });
 
     it('rejects even the correct password while locked', async () => {
