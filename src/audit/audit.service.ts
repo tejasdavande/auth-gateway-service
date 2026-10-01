@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { AuditEvent } from './audit-event.enum';
-import { AuditLogRepository } from './audit-log.repository';
+import { AuditLogFilter, AuditLogRepository } from './audit-log.repository';
+import { AuditLog } from './entities/audit-log.entity';
 
 export interface AuditContext {
   userId?: string | null;
@@ -26,5 +27,9 @@ export class AuditService {
     } catch (err) {
       this.logger.error(`failed to write audit event ${event}`, err instanceof Error ? err.stack : err);
     }
+  }
+
+  async list(filter: AuditLogFilter, page: number, limit: number): Promise<[AuditLog[], number]> {
+    return await this.auditLogs.findPage(filter, (page - 1) * limit, limit);
   }
 }

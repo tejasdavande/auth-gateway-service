@@ -9,7 +9,7 @@ describe('AuditService', () => {
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({
-      providers: [AuditService, { provide: AuditLogRepository, useValue: { save: jest.fn() } }],
+      providers: [AuditService, { provide: AuditLogRepository, useValue: { save: jest.fn(), findPage: jest.fn() } }],
     }).compile();
 
     service = moduleRef.get(AuditService);
@@ -37,5 +37,13 @@ describe('AuditService', () => {
     auditLogs.save.mockRejectedValue(new Error('connection lost'));
 
     await expect(service.record(AuditEvent.LOGIN_SUCCEEDED, { userId: 'user-1' })).resolves.toBeUndefined();
+  });
+
+  it('translates page/limit into skip/take and passes the filter through', async () => {
+    auditLogs.findPage.mockResolvedValue([[], 0]);
+
+    await service.list({ event: AuditEvent.LOGIN_FAILED }, 3, 20);
+
+    expect(auditLogs.findPage).toHaveBeenCalledWith({ event: AuditEvent.LOGIN_FAILED }, 40, 20);
   });
 });
