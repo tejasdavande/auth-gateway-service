@@ -18,7 +18,7 @@ export class AuditController {
     const [items, total] = await this.auditService.list(
       { userId: query.userId, event: query.event },
       query.page,
-      query.limit,
+      query.limit
     );
     return { items, total, page: query.page, limit: query.limit };
   }

@@ -28,7 +28,10 @@ describe('Login lockout (e2e)', () => {
 
   it('locks the account after five wrong passwords, even for the right one', async () => {
     for (let i = 0; i < 5; i++) {
-      await request(app.getHttpServer()).post('/auth/login').send({ email, password: 'wrong-password' }).expect(401);
+      await request(app.getHttpServer())
+        .post('/auth/login')
+        .send({ email, password: 'wrong-password' })
+        .expect(401);
     }
 
     const locked = await users.findByEmail(email);
@@ -36,7 +39,9 @@ describe('Login lockout (e2e)', () => {
     expect(locked!.lockedUntil!.getTime()).toBeGreaterThan(Date.now());
 
     // the login route's per-ip throttle is also 5/min, so the sixth attempt goes straight to the service
-    await expect(app.get(AuthService).login(email, password)).rejects.toThrow(UnauthorizedException);
+    await expect(app.get(AuthService).login(email, password)).rejects.toThrow(
+      UnauthorizedException
+    );
   });
 
   it('unlocks on password reset', async () => {
@@ -45,6 +50,8 @@ describe('Login lockout (e2e)', () => {
 
     const unlocked = await users.findByEmail(email);
     expect(unlocked!.lockedUntil).toBeNull();
-    await expect(app.get(AuthService).login(email, 'NewPassword456!')).resolves.toHaveProperty('accessToken');
+    await expect(app.get(AuthService).login(email, 'NewPassword456!')).resolves.toHaveProperty(
+      'accessToken'
+    );
   });
 });

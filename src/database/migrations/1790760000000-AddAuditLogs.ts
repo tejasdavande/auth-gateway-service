@@ -17,7 +17,9 @@ export class AddAuditLogs1790760000000 implements MigrationInterface {
     `);
 
     await queryRunner.query(`CREATE INDEX "IDX_audit_logs_userId" ON "audit_logs" ("userId")`);
-    await queryRunner.query(`CREATE INDEX "IDX_audit_logs_createdAt" ON "audit_logs" ("createdAt")`);
+    await queryRunner.query(
+      `CREATE INDEX "IDX_audit_logs_createdAt" ON "audit_logs" ("createdAt")`
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

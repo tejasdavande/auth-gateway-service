@@ -137,7 +137,9 @@ describe('AuthService', () => {
       const totpSecret = authenticator.generateSecret();
       userService.validateCredentials.mockResolvedValue({ ...user, totpEnabled: true, totpSecret });
 
-      await expect(authService.login(user.email, 'password', '000000')).rejects.toThrow(UnauthorizedException);
+      await expect(authService.login(user.email, 'password', '000000')).rejects.toThrow(
+        UnauthorizedException
+      );
 
       expect(userService.recordFailedLogin).toHaveBeenCalledWith(user.id);
       expect(userService.clearFailedLogins).not.toHaveBeenCalled();
@@ -149,9 +151,15 @@ describe('AuthService', () => {
     });
 
     it('does not count a missing totp code, the client just has not prompted for it yet', async () => {
-      userService.validateCredentials.mockResolvedValue({ ...user, totpEnabled: true, totpSecret: 'secret' });
+      userService.validateCredentials.mockResolvedValue({
+        ...user,
+        totpEnabled: true,
+        totpSecret: 'secret',
+      });
 
-      await expect(authService.login(user.email, 'password')).rejects.toThrow(UnauthorizedException);
+      await expect(authService.login(user.email, 'password')).rejects.toThrow(
+        UnauthorizedException
+      );
 
       expect(userService.recordFailedLogin).not.toHaveBeenCalled();
       expect(audit.record).not.toHaveBeenCalled();
@@ -160,9 +168,9 @@ describe('AuthService', () => {
     it('audits a bad password with the attempted email, since there may be no user to attach it to', async () => {
       userService.validateCredentials.mockResolvedValue(null);
 
-      await expect(authService.login('nobody@example.com', 'password', undefined, '10.0.0.1')).rejects.toThrow(
-        UnauthorizedException
-      );
+      await expect(
+        authService.login('nobody@example.com', 'password', undefined, '10.0.0.1')
+      ).rejects.toThrow(UnauthorizedException);
 
       expect(audit.record).toHaveBeenCalledWith(AuditEvent.LOGIN_FAILED, {
         ip: '10.0.0.1',
@@ -176,7 +184,10 @@ describe('AuthService', () => {
       await authService.login(user.email, 'password', undefined, '10.0.0.1');
 
       expect(userService.clearFailedLogins).toHaveBeenCalledWith(user);
-      expect(audit.record).toHaveBeenCalledWith(AuditEvent.LOGIN_SUCCEEDED, { userId: user.id, ip: '10.0.0.1' });
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.LOGIN_SUCCEEDED, {
+        userId: user.id,
+        ip: '10.0.0.1',
+      });
     });
   });
 

@@ -6,7 +6,9 @@ export class InitSchema1790064191824 implements MigrationInterface {
   public async up(queryRunner: QueryRunner): Promise<void> {
     await queryRunner.query(`CREATE EXTENSION IF NOT EXISTS "uuid-ossp"`);
 
-    await queryRunner.query(`CREATE TYPE "public"."users_role_enum" AS ENUM('admin', 'member', 'viewer')`);
+    await queryRunner.query(
+      `CREATE TYPE "public"."users_role_enum" AS ENUM('admin', 'member', 'viewer')`
+    );
     await queryRunner.query(`
       CREATE TABLE "users" (
         "id" uuid NOT NULL DEFAULT uuid_generate_v4(),
@@ -34,7 +36,9 @@ export class InitSchema1790064191824 implements MigrationInterface {
       )
     `);
 
-    await queryRunner.query(`CREATE INDEX "IDX_refresh_tokens_userId" ON "refresh_tokens" ("userId")`);
+    await queryRunner.query(
+      `CREATE INDEX "IDX_refresh_tokens_userId" ON "refresh_tokens" ("userId")`
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

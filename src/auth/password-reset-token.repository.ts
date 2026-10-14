@@ -5,7 +5,9 @@ import { PasswordResetToken } from './entities/password-reset-token.entity';
 
 @Injectable()
 export class PasswordResetTokenRepository {
-  constructor(@InjectRepository(PasswordResetToken) private readonly repo: Repository<PasswordResetToken>) {}
+  constructor(
+    @InjectRepository(PasswordResetToken) private readonly repo: Repository<PasswordResetToken>
+  ) {}
 
   async save(token: Partial<PasswordResetToken>): Promise<PasswordResetToken> {
     return await this.repo.save(token);

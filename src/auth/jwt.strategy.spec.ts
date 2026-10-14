@@ -28,7 +28,7 @@ describe('JwtStrategy', () => {
     userService = moduleRef.get(UserService);
   });
 
-  it('returns the user\'s current role from the database, not the token', async () => {
+  it("returns the user's current role from the database, not the token", async () => {
     userService.findById.mockResolvedValue({
       id: '1',
       email: 'user@example.com',
@@ -41,7 +41,11 @@ describe('JwtStrategy', () => {
       createdAt: new Date(),
     });
 
-    const result = await strategy.validate({ sub: '1', email: 'user@example.com', role: Role.MEMBER });
+    const result = await strategy.validate({
+      sub: '1',
+      email: 'user@example.com',
+      role: Role.MEMBER,
+    });
 
     expect(result).toEqual({ userId: '1', email: 'user@example.com', role: Role.ADMIN });
   });

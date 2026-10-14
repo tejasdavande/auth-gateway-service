@@ -25,7 +25,10 @@ export class AuditService {
         metadata: context.metadata ?? null,
       });
     } catch (err) {
-      this.logger.error(`failed to write audit event ${event}`, err instanceof Error ? err.stack : err);
+      this.logger.error(
+        `failed to write audit event ${event}`,
+        err instanceof Error ? err.stack : err
+      );
     }
   }
 

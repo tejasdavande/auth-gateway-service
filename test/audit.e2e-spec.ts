@@ -32,11 +32,23 @@ describe('Audit log (e2e)', () => {
   it('records failed and successful logins with the caller ip', async () => {
     const user = await app.get(UserService).findByEmail(email);
 
-    await request(app.getHttpServer()).post('/auth/login').send({ email, password: 'wrong-password' }).expect(401);
-    const { body } = await request(app.getHttpServer()).post('/auth/login').send({ email, password }).expect(201);
-    await request(app.getHttpServer()).post('/auth/logout').send({ refreshToken: body.refreshToken }).expect(201);
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password: 'wrong-password' })
+      .expect(401);
+    const { body } = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password })
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/auth/logout')
+      .send({ refreshToken: body.refreshToken })
+      .expect(201);
 
-    const entries = await auditLogs.find({ where: { userId: user!.id }, order: { createdAt: 'ASC' } });
+    const entries = await auditLogs.find({
+      where: { userId: user!.id },
+      order: { createdAt: 'ASC' },
+    });
     expect(entries.map((e) => e.event)).toEqual([AuditEvent.LOGIN_SUCCEEDED, AuditEvent.LOGOUT]);
     expect(entries[0].ip).toBeTruthy();
 

@@ -13,7 +13,9 @@ export class PasswordResetMailer implements OnModuleInit {
   onModuleInit(): void {
     const host = this.config.get<string>('SMTP_HOST');
     if (!host) {
-      this.logger.warn('SMTP_HOST not set, falling back to logging reset tokens instead of emailing them');
+      this.logger.warn(
+        'SMTP_HOST not set, falling back to logging reset tokens instead of emailing them'
+      );
       return;
     }
 

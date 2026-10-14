@@ -21,7 +21,10 @@ describe('Password reset (e2e)', () => {
     app.useGlobalPipes(new ValidationPipe({ whitelist: true, transform: true }));
     await app.init();
 
-    await request(app.getHttpServer()).post('/auth/register').send({ email, password: oldPassword }).expect(201);
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email, password: oldPassword })
+      .expect(201);
   });
 
   afterAll(async () => {
@@ -44,7 +47,10 @@ describe('Password reset (e2e)', () => {
       .send({ email, password: oldPassword })
       .expect(201);
 
-    await request(app.getHttpServer()).post('/auth/password-reset/request').send({ email }).expect(202);
+    await request(app.getHttpServer())
+      .post('/auth/password-reset/request')
+      .send({ email })
+      .expect(202);
     expect(sent).toHaveLength(1);
     const { token } = sent[0];
 
@@ -53,8 +59,14 @@ describe('Password reset (e2e)', () => {
       .send({ token, newPassword })
       .expect(200);
 
-    await request(app.getHttpServer()).post('/auth/login').send({ email, password: oldPassword }).expect(401);
-    await request(app.getHttpServer()).post('/auth/login').send({ email, password: newPassword }).expect(201);
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password: oldPassword })
+      .expect(401);
+    await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password: newPassword })
+      .expect(201);
     await request(app.getHttpServer())
       .post('/auth/refresh')
       .send({ refreshToken: login.body.refreshToken })

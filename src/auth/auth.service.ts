@@ -34,7 +34,12 @@ export class AuthService {
     return await this.userService.register(email, password);
   }
 
-  async login(email: string, password: string, totpToken?: string, ip?: string): Promise<TokenPair> {
+  async login(
+    email: string,
+    password: string,
+    totpToken?: string,
+    ip?: string
+  ): Promise<TokenPair> {
     const user = await this.userService.validateCredentials(email, password);
     if (!user) {
       await this.audit.record(AuditEvent.LOGIN_FAILED, { ip, metadata: { email } });
@@ -47,7 +52,11 @@ export class AuthService {
       }
       if (!authenticator.check(totpToken, user.totpSecret!)) {
         await this.userService.recordFailedLogin(user.id);
-        await this.audit.record(AuditEvent.LOGIN_FAILED, { userId: user.id, ip, metadata: { email, reason: 'totp' } });
+        await this.audit.record(AuditEvent.LOGIN_FAILED, {
+          userId: user.id,
+          ip,
+          metadata: { email, reason: 'totp' },
+        });
         throw new UnauthorizedException('invalid or missing totp token');
       }
     }

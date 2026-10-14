@@ -154,7 +154,9 @@ describe('UserService', () => {
         lockedUntil: new Date(Date.now() + 60_000),
       });
 
-      await expect(userService.validateCredentials(baseUser.email, 'password123')).resolves.toBeNull();
+      await expect(
+        userService.validateCredentials(baseUser.email, 'password123')
+      ).resolves.toBeNull();
       expect(userRepository.incrementFailedLogins).not.toHaveBeenCalled();
     });
 
@@ -164,7 +166,9 @@ describe('UserService', () => {
         lockedUntil: new Date(Date.now() - 1000),
       });
 
-      await expect(userService.validateCredentials(baseUser.email, 'password123')).resolves.toMatchObject({
+      await expect(
+        userService.validateCredentials(baseUser.email, 'password123')
+      ).resolves.toMatchObject({
         id: '1',
       });
     });

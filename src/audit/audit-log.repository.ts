@@ -17,7 +17,11 @@ export class AuditLogRepository {
     return await this.repo.save(entry);
   }
 
-  async findPage(filter: AuditLogFilter, skip: number, take: number): Promise<[AuditLog[], number]> {
+  async findPage(
+    filter: AuditLogFilter,
+    skip: number,
+    take: number
+  ): Promise<[AuditLog[], number]> {
     const where: FindOptionsWhere<AuditLog> = {};
     if (filter.userId) {
       where.userId = filter.userId;

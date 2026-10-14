@@ -15,7 +15,10 @@ describe('Audit logs endpoint (e2e)', () => {
   const memberEmail = `audit-member-${Date.now()}@example.com`;
 
   const login = async (email: string) => {
-    const res = await request(app.getHttpServer()).post('/auth/login').send({ email, password }).expect(201);
+    const res = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password })
+      .expect(201);
     return res.body.accessToken as string;
   };
 
@@ -60,7 +63,10 @@ describe('Audit logs endpoint (e2e)', () => {
 
     expect(res.body.total).toBe(1);
     expect(res.body.items).toHaveLength(1);
-    expect(res.body.items[0]).toMatchObject({ event: AuditEvent.LOGIN_SUCCEEDED, userId: memberId });
+    expect(res.body.items[0]).toMatchObject({
+      event: AuditEvent.LOGIN_SUCCEEDED,
+      userId: memberId,
+    });
   });
 
   it('filters by event and returns the newest entry first', async () => {
@@ -74,7 +80,8 @@ describe('Audit logs endpoint (e2e)', () => {
       .set('Authorization', `Bearer ${adminToken}`)
       .expect(200);
 
-    const items: { event: string; createdAt: string; metadata: { email?: string } | null }[] = res.body.items;
+    const items: { event: string; createdAt: string; metadata: { email?: string } | null }[] =
+      res.body.items;
     expect(items.every((e) => e.event === AuditEvent.LOGIN_FAILED)).toBe(true);
     expect(items.some((e) => e.metadata?.email === memberEmail)).toBe(true);
 

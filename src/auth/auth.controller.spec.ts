@@ -9,7 +9,9 @@ import { PasswordResetService } from './password-reset.service';
 
 describe('AuthController rate limiting', () => {
   let app: INestApplication;
-  const authService = { login: jest.fn().mockResolvedValue({ accessToken: 'a', refreshToken: 'r' }) };
+  const authService = {
+    login: jest.fn().mockResolvedValue({ accessToken: 'a', refreshToken: 'r' }),
+  };
 
   beforeEach(async () => {
     const moduleRef = await Test.createTestingModule({

@@ -17,7 +17,9 @@ export class AddPasswordResetTokens1790403300000 implements MigrationInterface {
       )
     `);
 
-    await queryRunner.query(`CREATE INDEX "IDX_password_reset_tokens_userId" ON "password_reset_tokens" ("userId")`);
+    await queryRunner.query(
+      `CREATE INDEX "IDX_password_reset_tokens_userId" ON "password_reset_tokens" ("userId")`
+    );
   }
 
   public async down(queryRunner: QueryRunner): Promise<void> {

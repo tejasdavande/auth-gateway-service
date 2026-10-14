@@ -23,7 +23,10 @@ describe('Auth (e2e)', () => {
   });
 
   it('registers a user without leaking the password hash', async () => {
-    const res = await request(app.getHttpServer()).post('/auth/register').send({ email, password }).expect(201);
+    const res = await request(app.getHttpServer())
+      .post('/auth/register')
+      .send({ email, password })
+      .expect(201);
 
     expect(res.body).toEqual({ id: expect.any(String), email, role: 'member' });
     expect(res.body.passwordHash).toBeUndefined();
@@ -34,7 +37,10 @@ describe('Auth (e2e)', () => {
   });
 
   it('logs in with correct credentials and returns a token pair', async () => {
-    const res = await request(app.getHttpServer()).post('/auth/login').send({ email, password }).expect(201);
+    const res = await request(app.getHttpServer())
+      .post('/auth/login')
+      .send({ email, password })
+      .expect(201);
 
     expect(res.body.accessToken).toEqual(expect.any(String));
     expect(res.body.refreshToken).toEqual(expect.any(String));

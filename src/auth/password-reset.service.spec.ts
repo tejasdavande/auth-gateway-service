@@ -89,7 +89,10 @@ describe('PasswordResetService', () => {
       expect(resetTokens.invalidateOpenForUser).toHaveBeenCalledWith(user.id);
       expect(saved.tokenHash).toBe(crypto.createHash('sha256').update(sentToken).digest('hex'));
       expect(saved.tokenHash).not.toBe(sentToken);
-      expect(audit.record).toHaveBeenCalledWith(AuditEvent.PASSWORD_RESET_REQUESTED, { userId: user.id, ip: '10.0.0.1' });
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.PASSWORD_RESET_REQUESTED, {
+        userId: user.id,
+        ip: '10.0.0.1',
+      });
     });
   });
 
@@ -102,19 +105,28 @@ describe('PasswordResetService', () => {
 
       expect(userService.updatePassword).toHaveBeenCalledWith(user.id, 'NewPassword123!');
       expect(refreshTokens.revokeAllForUser).toHaveBeenCalledWith(user.id);
-      expect(audit.record).toHaveBeenCalledWith(AuditEvent.PASSWORD_RESET_COMPLETED, { userId: user.id, ip: '10.0.0.1' });
+      expect(audit.record).toHaveBeenCalledWith(AuditEvent.PASSWORD_RESET_COMPLETED, {
+        userId: user.id,
+        ip: '10.0.0.1',
+      });
     });
 
     it('rejects an unknown token', async () => {
       resetTokens.findByHash.mockResolvedValue(null);
 
-      await expect(service.confirm('token', 'NewPassword123!')).rejects.toThrow(BadRequestException);
+      await expect(service.confirm('token', 'NewPassword123!')).rejects.toThrow(
+        BadRequestException
+      );
     });
 
     it('rejects an expired token', async () => {
-      resetTokens.findByHash.mockResolvedValue(storedToken({ expiresAt: new Date(Date.now() - 1000) }));
+      resetTokens.findByHash.mockResolvedValue(
+        storedToken({ expiresAt: new Date(Date.now() - 1000) })
+      );
 
-      await expect(service.confirm('token', 'NewPassword123!')).rejects.toThrow(BadRequestException);
+      await expect(service.confirm('token', 'NewPassword123!')).rejects.toThrow(
+        BadRequestException
+      );
       expect(userService.updatePassword).not.toHaveBeenCalled();
     });
 
@@ -122,7 +134,9 @@ describe('PasswordResetService', () => {
       resetTokens.findByHash.mockResolvedValue(storedToken());
       resetTokens.markUsed.mockResolvedValue(false);
 
-      await expect(service.confirm('token', 'NewPassword123!')).rejects.toThrow(BadRequestException);
+      await expect(service.confirm('token', 'NewPassword123!')).rejects.toThrow(
+        BadRequestException
+      );
       expect(userService.updatePassword).not.toHaveBeenCalled();
     });
   });
