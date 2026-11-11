@@ -45,6 +45,7 @@ describe('JwtStrategy', () => {
       sub: '1',
       email: 'user@example.com',
       role: Role.MEMBER,
+      token_use: 'access',
     });
 
     expect(result).toEqual({ userId: '1', email: 'user@example.com', role: Role.ADMIN });
@@ -54,7 +55,30 @@ describe('JwtStrategy', () => {
     userService.findById.mockResolvedValue(null);
 
     await expect(
-      strategy.validate({ sub: 'deleted-id', email: 'gone@example.com', role: Role.MEMBER })
+      strategy.validate({
+        sub: 'deleted-id',
+        email: 'gone@example.com',
+        role: Role.MEMBER,
+        token_use: 'access',
+      })
+    ).rejects.toThrow(UnauthorizedException);
+  });
+
+  it('rejects a refresh token used as an access token', async () => {
+    await expect(
+      strategy.validate({
+        sub: '1',
+        email: 'user@example.com',
+        role: Role.MEMBER,
+        token_use: 'refresh',
+      })
+    ).rejects.toThrow(UnauthorizedException);
+    expect(userService.findById).not.toHaveBeenCalled();
+  });
+
+  it('rejects a token with no token_use claim', async () => {
+    await expect(
+      strategy.validate({ sub: '1', email: 'user@example.com', role: Role.MEMBER })
     ).rejects.toThrow(UnauthorizedException);
   });
 });

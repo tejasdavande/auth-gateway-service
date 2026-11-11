@@ -18,6 +18,7 @@ interface JwtPayload {
   sub: string;
   email: string;
   role: string;
+  token_use?: string;
 }
 
 @Injectable()
@@ -110,13 +111,17 @@ export class AuthService {
   private async issueTokens(user: User): Promise<TokenPair> {
     const payload: JwtPayload = { sub: user.id, email: user.email, role: user.role };
 
-    const accessToken = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get<string>('JWT_ACCESS_TTL'),
-    });
-    const refreshToken = this.jwtService.sign(payload, {
-      expiresIn: this.configService.get<string>('JWT_REFRESH_TTL'),
-      jwtid: crypto.randomUUID(),
-    });
+    const accessToken = this.jwtService.sign(
+      { ...payload, token_use: 'access' },
+      { expiresIn: this.configService.get<string>('JWT_ACCESS_TTL') }
+    );
+    const refreshToken = this.jwtService.sign(
+      { ...payload, token_use: 'refresh' },
+      {
+        expiresIn: this.configService.get<string>('JWT_REFRESH_TTL'),
+        jwtid: crypto.randomUUID(),
+      }
+    );
 
     const { exp } = this.jwtService.decode(refreshToken) as { exp: number };
     await this.refreshTokens.save({
@@ -129,11 +134,16 @@ export class AuthService {
   }
 
   private verifyRefreshToken(refreshToken: string): JwtPayload {
+    let payload: JwtPayload;
     try {
-      return this.jwtService.verify<JwtPayload>(refreshToken);
+      payload = this.jwtService.verify<JwtPayload>(refreshToken);
     } catch {
       throw new UnauthorizedException('invalid or expired refresh token');
     }
+    if (payload.token_use !== 'refresh') {
+      throw new UnauthorizedException('invalid or expired refresh token');
+    }
+    return payload;
   }
 
   private hashToken(token: string): string {

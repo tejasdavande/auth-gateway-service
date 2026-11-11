@@ -9,6 +9,7 @@ interface JwtPayload {
   sub: string;
   email: string;
   role: string;
+  token_use?: string;
 }
 
 @Injectable()
@@ -27,6 +28,10 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   // role comes from the DB, not the token payload, so a promotion/demotion
   // takes effect immediately instead of waiting out the old access token's ttl
   async validate(payload: JwtPayload): Promise<AuthenticatedUser> {
+    if (payload.token_use !== 'access') {
+      throw new UnauthorizedException();
+    }
+
     const user = await this.users.findById(payload.sub);
     if (!user) {
       throw new UnauthorizedException();

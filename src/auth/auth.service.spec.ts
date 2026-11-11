@@ -80,7 +80,12 @@ describe('AuthService', () => {
 
   describe('refresh', () => {
     it('rejects a token that was already redeemed', async () => {
-      jwtService.verify.mockReturnValue({ sub: user.id, email: user.email, role: user.role });
+      jwtService.verify.mockReturnValue({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        token_use: 'refresh',
+      });
       refreshTokenRepository.findByHash.mockResolvedValue({
         id: 'rt-1',
         userId: user.id,
@@ -94,7 +99,12 @@ describe('AuthService', () => {
     });
 
     it('rotates: revokes the old token and issues a fresh pair', async () => {
-      jwtService.verify.mockReturnValue({ sub: user.id, email: user.email, role: user.role });
+      jwtService.verify.mockReturnValue({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        token_use: 'refresh',
+      });
       refreshTokenRepository.findByHash.mockResolvedValue({
         id: 'rt-1',
         userId: user.id,
@@ -110,6 +120,18 @@ describe('AuthService', () => {
       expect(refreshTokenRepository.revoke).toHaveBeenCalledWith('rt-1');
       expect(tokens.accessToken).toBeDefined();
       expect(tokens.refreshToken).toBeDefined();
+    });
+
+    it('rejects an access token presented as a refresh token', async () => {
+      jwtService.verify.mockReturnValue({
+        sub: user.id,
+        email: user.email,
+        role: user.role,
+        token_use: 'access',
+      });
+
+      await expect(authService.refresh('access-token')).rejects.toThrow(UnauthorizedException);
+      expect(refreshTokenRepository.revoke).not.toHaveBeenCalled();
     });
 
     it('rejects a token that fails signature/expiry verification', async () => {

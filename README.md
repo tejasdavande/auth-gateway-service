@@ -50,6 +50,8 @@ NestJS, TypeScript, PostgreSQL (TypeORM), Passport-JWT, bcrypt, otplib (TOTP), @
 
 Every route is rate limited per IP (60 req/min by default). `/auth/login` and `/auth/2fa/confirm` allow 5 per minute, `/auth/refresh` allows 10, `/auth/password-reset/request` allows 3; past that you get a `429`.
 
+Tokens carry a `token_use` claim (`access` or `refresh`). Protected routes only accept access tokens and `/auth/refresh` only accepts refresh tokens, so one can't stand in for the other.
+
 On top of the per-IP limit, each account locks for 15 minutes after 5 consecutive failed logins (a wrong password or a wrong TOTP code; a missing TOTP code doesn't count). While locked, even the correct password gets the same `401` as a wrong one, so the response doesn't reveal which accounts exist or are locked. A successful login resets the counter, and a password reset clears the lock.
 
 Security-relevant events are written to an `audit_logs` table: successful and failed logins, lockouts, logouts, password reset requests and completions, TOTP enrollment, and role changes. Each row has the user id (when known), the caller IP where there is one, and optional JSON metadata. A failed login stores the attempted email instead of a user id, since the email may not match any account. A failed audit write is logged and dropped, so it never blocks the request.
